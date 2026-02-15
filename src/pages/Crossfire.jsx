@@ -95,7 +95,7 @@ export default function Crossfire() {
     setInvulnerable(true);
     
     const newAliens = [];
-    const alienCount = Math.min(4 + levelNum * 2, 20);
+    const alienCount = Math.min(1 + levelNum, 20);
     
     for (let i = 0; i < alienCount; i++) {
       const edge = Math.floor(Math.random() * 4);
@@ -350,7 +350,10 @@ export default function Crossfire() {
       // Move aliens
       setAliens(prev => {
         return prev.map(alien => {
-          if (now - alien.lastMove < 300) return alien;
+          const baseDelay = 1000; // 70% slower at level 1 (was 300ms, now 1000ms)
+          const speedMultiplier = Math.pow(0.98, level - 1); // 2% faster each level
+          const moveDelay = baseDelay * speedMultiplier;
+          if (now - alien.lastMove < moveDelay) return alien;
           
           setPlayer(p => {
             const dx = p.x - alien.x;
