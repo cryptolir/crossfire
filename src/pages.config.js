@@ -47,8 +47,14 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Crossfire from './pages/Crossfire';
 
-export const pagesConfig = {
-	Pages: {}
+
+export const PAGES = {
+    "Crossfire": Crossfire,
 }
 
+export const pagesConfig = {
+    mainPage: "Crossfire",
+    Pages: PAGES,
+};
