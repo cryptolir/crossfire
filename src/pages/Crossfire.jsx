@@ -176,17 +176,26 @@ export default function Crossfire() {
     gameLoopRef.current = setInterval(() => {
       const now = Date.now();
 
-      // Handle shooting (W, X, A, D)
-      if (keysPressed.current['w'] || keysPressed.current['W']) {
-        keysPressed.current['w'] = false;
-        keysPressed.current['W'] = false;
+      // Handle shooting (W, X, A, D) - only fire when player is on a street intersection
+      setPlayer(p => {
+        const onStreetX = STREET_POSITIONS.some(pos => Math.abs(p.x - pos) < 3);
+        const onStreetY = STREET_POSITIONS.some(pos => Math.abs(p.y - pos) < 3);
+        const atIntersection = onStreetX && onStreetY;
         
-        setAmmo(prevAmmo => {
-          if (prevAmmo <= 0) return prevAmmo;
+        if (!atIntersection) return p;
+        
+        const snappedX = snapToNearestStreet(p.x);
+        const snappedY = snapToNearestStreet(p.y);
+        
+        if (keysPressed.current['w'] || keysPressed.current['W']) {
+          keysPressed.current['w'] = false;
+          keysPressed.current['W'] = false;
           
-          setPlayer(p => {
+          setAmmo(prevAmmo => {
+            if (prevAmmo <= 0) return prevAmmo;
+            
             setBullets(prevBullets => {
-              const xIdx = getStreetIndex(p.x);
+              const xIdx = getStreetIndex(snappedX);
               const bulletsInStreet = prevBullets.filter(b => 
                 getStreetIndex(b.x) === xIdx && b.dy !== 0
               ).length;
@@ -194,31 +203,28 @@ export default function Crossfire() {
               if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
                 return [...prevBullets, {
                   id: Date.now() + Math.random(),
-                  x: p.x,
-                  y: p.y,
+                  x: snappedX,
+                  y: snappedY,
                   dx: 0,
                   dy: -5
                 }];
               }
               return prevBullets;
             });
-            return p;
+            
+            return prevAmmo - 1;
           });
-          
-          return prevAmmo - 1;
-        });
-      }
+        }
 
-      if (keysPressed.current['x'] || keysPressed.current['X']) {
-        keysPressed.current['x'] = false;
-        keysPressed.current['X'] = false;
-        
-        setAmmo(prevAmmo => {
-          if (prevAmmo <= 0) return prevAmmo;
+        if (keysPressed.current['x'] || keysPressed.current['X']) {
+          keysPressed.current['x'] = false;
+          keysPressed.current['X'] = false;
           
-          setPlayer(p => {
+          setAmmo(prevAmmo => {
+            if (prevAmmo <= 0) return prevAmmo;
+            
             setBullets(prevBullets => {
-              const xIdx = getStreetIndex(p.x);
+              const xIdx = getStreetIndex(snappedX);
               const bulletsInStreet = prevBullets.filter(b => 
                 getStreetIndex(b.x) === xIdx && b.dy !== 0
               ).length;
@@ -226,31 +232,28 @@ export default function Crossfire() {
               if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
                 return [...prevBullets, {
                   id: Date.now() + Math.random(),
-                  x: p.x,
-                  y: p.y,
+                  x: snappedX,
+                  y: snappedY,
                   dx: 0,
                   dy: 5
                 }];
               }
               return prevBullets;
             });
-            return p;
+            
+            return prevAmmo - 1;
           });
-          
-          return prevAmmo - 1;
-        });
-      }
+        }
 
-      if (keysPressed.current['a'] || keysPressed.current['A']) {
-        keysPressed.current['a'] = false;
-        keysPressed.current['A'] = false;
-        
-        setAmmo(prevAmmo => {
-          if (prevAmmo <= 0) return prevAmmo;
+        if (keysPressed.current['a'] || keysPressed.current['A']) {
+          keysPressed.current['a'] = false;
+          keysPressed.current['A'] = false;
           
-          setPlayer(p => {
+          setAmmo(prevAmmo => {
+            if (prevAmmo <= 0) return prevAmmo;
+            
             setBullets(prevBullets => {
-              const yIdx = getStreetIndex(p.y);
+              const yIdx = getStreetIndex(snappedY);
               const bulletsInStreet = prevBullets.filter(b => 
                 getStreetIndex(b.y) === yIdx && b.dx !== 0
               ).length;
@@ -258,31 +261,28 @@ export default function Crossfire() {
               if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
                 return [...prevBullets, {
                   id: Date.now() + Math.random(),
-                  x: p.x,
-                  y: p.y,
+                  x: snappedX,
+                  y: snappedY,
                   dx: -5,
                   dy: 0
                 }];
               }
               return prevBullets;
             });
-            return p;
+            
+            return prevAmmo - 1;
           });
-          
-          return prevAmmo - 1;
-        });
-      }
+        }
 
-      if (keysPressed.current['d'] || keysPressed.current['D']) {
-        keysPressed.current['d'] = false;
-        keysPressed.current['D'] = false;
-        
-        setAmmo(prevAmmo => {
-          if (prevAmmo <= 0) return prevAmmo;
+        if (keysPressed.current['d'] || keysPressed.current['D']) {
+          keysPressed.current['d'] = false;
+          keysPressed.current['D'] = false;
           
-          setPlayer(p => {
+          setAmmo(prevAmmo => {
+            if (prevAmmo <= 0) return prevAmmo;
+            
             setBullets(prevBullets => {
-              const yIdx = getStreetIndex(p.y);
+              const yIdx = getStreetIndex(snappedY);
               const bulletsInStreet = prevBullets.filter(b => 
                 getStreetIndex(b.y) === yIdx && b.dx !== 0
               ).length;
@@ -290,20 +290,21 @@ export default function Crossfire() {
               if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
                 return [...prevBullets, {
                   id: Date.now() + Math.random(),
-                  x: p.x,
-                  y: p.y,
+                  x: snappedX,
+                  y: snappedY,
                   dx: 5,
                   dy: 0
                 }];
               }
               return prevBullets;
             });
-            return p;
+            
+            return prevAmmo - 1;
           });
-          
-          return prevAmmo - 1;
-        });
-      }
+        }
+        
+        return p;
+      });
 
       // Move player with arrow keys - smooth movement along streets
       setPlayer(prevPlayer => {
@@ -339,12 +340,16 @@ export default function Crossfire() {
           }
         }
         
-        // Smooth interpolation towards target
-        const moveSpeed = 0.15;
+        // Smooth interpolation towards target (faster player movement)
+        const moveSpeed = 0.2;
         const newX = prevPlayer.x + (newTargetX - prevPlayer.x) * moveSpeed;
         const newY = prevPlayer.y + (newTargetY - prevPlayer.y) * moveSpeed;
         
-        return { x: newX, y: newY, targetX: newTargetX, targetY: newTargetY };
+        // Snap when very close to avoid jitter
+        const finalX = Math.abs(newTargetX - newX) < 1 ? newTargetX : newX;
+        const finalY = Math.abs(newTargetY - newY) < 1 ? newTargetY : newY;
+        
+        return { x: finalX, y: finalY, targetX: newTargetX, targetY: newTargetY };
       });
 
       // Move aliens
@@ -404,27 +409,42 @@ export default function Crossfire() {
         });
       });
 
-      // Aliens shoot (level 3+)
+      // Aliens shoot (level 3+) - only in streets (cardinal directions)
       if (level >= 3) {
         setAliens(prev => {
           const shootingAliens = prev.filter(alien => {
             if (now - alien.lastShot < 1500) return false;
+            // Only shoot when at a street intersection
+            const onStreetX = STREET_POSITIONS.some(pos => Math.abs(alien.x - pos) < 3);
+            const onStreetY = STREET_POSITIONS.some(pos => Math.abs(alien.y - pos) < 3);
+            if (!onStreetX || !onStreetY) return false;
             return Math.random() < 0.25;
           });
           
           if (shootingAliens.length > 0) {
             setPlayer(p => {
               const newBullets = shootingAliens.map(alien => {
-                const dx = p.x - alien.x;
-                const dy = p.y - alien.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const snappedAlienX = snapToNearestStreet(alien.x);
+                const snappedAlienY = snapToNearestStreet(alien.y);
+                const dx = p.x - snappedAlienX;
+                const dy = p.y - snappedAlienY;
+                
+                // Fire in cardinal direction (street direction) towards player
+                let bulletDx = 0;
+                let bulletDy = 0;
+                
+                if (Math.abs(dx) > Math.abs(dy)) {
+                  bulletDx = dx > 0 ? 4 : -4;
+                } else {
+                  bulletDy = dy > 0 ? 4 : -4;
+                }
                 
                 return {
                   id: Date.now() + Math.random(),
-                  x: alien.x,
-                  y: alien.y,
-                  dx: (dx / dist) * 4,
-                  dy: (dy / dist) * 4
+                  x: snappedAlienX,
+                  y: snappedAlienY,
+                  dx: bulletDx,
+                  dy: bulletDy
                 };
               });
               
