@@ -13,7 +13,7 @@ const CRYSTAL_VALUES = [100, 200, 400, 800];
 const EXTRA_LIFE_SCORE = 5000;
 const MAX_BULLETS_PER_STREET = 2;
 
-const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/111d318f5_image.png";
+const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/ee90ec378_image.png";
 
 // Sound effects
 const playHitSound = () => {
@@ -461,6 +461,40 @@ export default function Crossfire() {
           }
         });
         
+        // Helper to push aliens away from center
+        const pushAliensAway = () => {
+          setAliens(prevAliens => prevAliens.map(alien => {
+            const centerX = STREET_POSITIONS[3];
+            const centerY = STREET_POSITIONS[3];
+            const dx = alien.x - centerX;
+            const dy = alien.y - centerY;
+            
+            // Push alien 2-3 blocks away from center
+            let newTargetX = alien.targetX;
+            let newTargetY = alien.targetY;
+            
+            if (Math.abs(dx) >= Math.abs(dy)) {
+              // Push horizontally
+              const currentIdx = getStreetIndex(alien.x);
+              if (dx >= 0) {
+                newTargetX = STREET_POSITIONS[Math.min(currentIdx + 2, STREET_POSITIONS.length - 1)];
+              } else {
+                newTargetX = STREET_POSITIONS[Math.max(currentIdx - 2, 0)];
+              }
+            } else {
+              // Push vertically
+              const currentIdx = getStreetIndex(alien.y);
+              if (dy >= 0) {
+                newTargetY = STREET_POSITIONS[Math.min(currentIdx + 2, STREET_POSITIONS.length - 1)];
+              } else {
+                newTargetY = STREET_POSITIONS[Math.max(currentIdx - 2, 0)];
+              }
+            }
+            
+            return { ...alien, targetX: newTargetX, targetY: newTargetY };
+          }));
+        };
+
         if (wasHitByBullet) {
           playHitSound();
           setHitEffect(true);
@@ -476,6 +510,7 @@ export default function Crossfire() {
                 } else {
                   setInvulnerable(true);
                   setPlayerDirection(null);
+                  pushAliensAway();
                   setTimeout(() => {
                     setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
                     setInvulnerable(false);
@@ -505,6 +540,7 @@ export default function Crossfire() {
               setHealth(INITIAL_HEALTH);
               setInvulnerable(true);
               setPlayerDirection(null);
+              pushAliensAway();
               setTimeout(() => {
                 setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
                 setInvulnerable(false);
@@ -630,13 +666,13 @@ export default function Crossfire() {
           <div className="flex gap-8 mb-4 text-white text-xl">
             <div>Level: <span className="text-cyan-400 font-bold">{level}</span></div>
             <div>Score: <span className="text-yellow-400 font-bold">{score}</span></div>
-            <div className="flex items-center gap-2">
-              <span>Lives: <span className="text-red-400 font-bold">{lives}</span></span>
+            <div className="flex flex-col items-center gap-1">
+              <div>Lives: <span className="text-red-400 font-bold">{'❤️'.repeat(lives)}</span></div>
               <div className="flex gap-0.5">
                 {[0, 1, 2].map(i => (
                   <div 
                     key={i}
-                    className={`w-4 h-3 border border-pink-400 ${i < health ? 'bg-pink-500' : 'bg-gray-700'}`}
+                    className={`w-5 h-2 border border-pink-400 ${i < health ? 'bg-pink-500' : 'bg-gray-700'}`}
                   />
                 ))}
               </div>
