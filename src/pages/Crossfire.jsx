@@ -15,6 +15,35 @@ const MAX_BULLETS_PER_STREET = 2;
 
 const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/111d318f5_image.png";
 
+// Sound effects
+const playHitSound = () => {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscillator.frequency.value = 200;
+  oscillator.type = 'sawtooth';
+  gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  oscillator.start(audioCtx.currentTime);
+  oscillator.stop(audioCtx.currentTime + 0.3);
+};
+
+const playShootSound = () => {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscillator.frequency.value = 800;
+  oscillator.type = 'square';
+  gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  oscillator.start(audioCtx.currentTime);
+  oscillator.stop(audioCtx.currentTime + 0.1);
+};
+
 const DIRECTIONS = {
   UP: { dx: 0, dy: -1 },
   DOWN: { dx: 0, dy: 1 },
@@ -74,6 +103,8 @@ export default function Crossfire() {
   const [lastExtraLife, setLastExtraLife] = useState(0);
   const [invulnerable, setInvulnerable] = useState(false);
   const [health, setHealth] = useState(INITIAL_HEALTH);
+  const [hitEffect, setHitEffect] = useState(false);
+  const [playerDirection, setPlayerDirection] = useState(null); // For continuous Pac-Man style movement
   
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
@@ -309,42 +340,46 @@ export default function Crossfire() {
         return p;
       });
 
-      // Move player with arrow keys - smooth movement along streets
+      // Pac-Man style continuous movement - update direction on key press
+      if (keysPressed.current['ArrowUp']) {
+        setPlayerDirection('up');
+      } else if (keysPressed.current['ArrowDown']) {
+        setPlayerDirection('down');
+      } else if (keysPressed.current['ArrowLeft']) {
+        setPlayerDirection('left');
+      } else if (keysPressed.current['ArrowRight']) {
+        setPlayerDirection('right');
+      }
+
+      // Move player continuously in current direction
       setPlayer(prevPlayer => {
         let newTargetX = prevPlayer.targetX;
         let newTargetY = prevPlayer.targetY;
         const currentXIdx = getStreetIndex(prevPlayer.targetX);
         const currentYIdx = getStreetIndex(prevPlayer.targetY);
         
-        // Only allow new input if player has reached target
+        // Check if player reached target - then set next target based on direction
         const atTarget = Math.abs(prevPlayer.x - prevPlayer.targetX) < 2 && 
                          Math.abs(prevPlayer.y - prevPlayer.targetY) < 2;
         
-        if (atTarget) {
-          if (keysPressed.current['ArrowUp']) {
+        if (atTarget && playerDirection) {
+          if (playerDirection === 'up') {
             const nextIdx = currentYIdx > 0 ? currentYIdx - 1 : STREET_POSITIONS.length - 1;
             newTargetY = STREET_POSITIONS[nextIdx];
-            keysPressed.current['ArrowUp'] = false;
-          }
-          if (keysPressed.current['ArrowDown']) {
+          } else if (playerDirection === 'down') {
             const nextIdx = currentYIdx < STREET_POSITIONS.length - 1 ? currentYIdx + 1 : 0;
             newTargetY = STREET_POSITIONS[nextIdx];
-            keysPressed.current['ArrowDown'] = false;
-          }
-          if (keysPressed.current['ArrowLeft']) {
+          } else if (playerDirection === 'left') {
             const nextIdx = currentXIdx > 0 ? currentXIdx - 1 : STREET_POSITIONS.length - 1;
             newTargetX = STREET_POSITIONS[nextIdx];
-            keysPressed.current['ArrowLeft'] = false;
-          }
-          if (keysPressed.current['ArrowRight']) {
+          } else if (playerDirection === 'right') {
             const nextIdx = currentXIdx < STREET_POSITIONS.length - 1 ? currentXIdx + 1 : 0;
             newTargetX = STREET_POSITIONS[nextIdx];
-            keysPressed.current['ArrowRight'] = false;
           }
         }
         
-        // Smooth interpolation towards target (faster player movement)
-        const moveSpeed = 0.2;
+        // Smooth interpolation towards target
+        const moveSpeed = 0.15;
         const newX = prevPlayer.x + (newTargetX - prevPlayer.x) * moveSpeed;
         const newY = prevPlayer.y + (newTargetY - prevPlayer.y) * moveSpeed;
         
@@ -506,72 +541,85 @@ export default function Crossfire() {
         return remainingBullets.filter((_, idx) => !bulletsToRemove.has(idx));
       });
 
-      // Check player hit
+      // Check player hit by alien bullets
       if (!invulnerable) {
-        setPlayer(p => {
-          const hitByBullet = alienBullets.some(b => 
-            Math.abs(b.x - p.x) < 12 && Math.abs(b.y - p.y) < 12
+        let wasHitByBullet = false;
+        let wasHitByAlien = false;
+        
+        // Check bullet collision
+        setAlienBullets(prevBullets => {
+          const playerPos = player; // Use current player state
+          const hitBullet = prevBullets.find(b => 
+            Math.abs(b.x - playerPos.x) < 15 && Math.abs(b.y - playerPos.y) < 15
           );
           
-          setAliens(aliens => {
-            const hitByAlien = aliens.some(a => 
-              Math.abs(a.x - p.x) < 20 && Math.abs(a.y - p.y) < 20
-            );
-            
-            if (hitByBullet) {
-              // Enemy bullet takes 1/3 of a life (1 health point)
-              setHealth(prevHealth => {
-                const newHealth = prevHealth - 1;
-                if (newHealth <= 0) {
-                  // Lost a full life
-                  setLives(prevLives => {
-                    const newLives = prevLives - 1;
-                    if (newLives <= 0) {
-                      setGameState('gameOver');
-                    } else {
-                      setHealth(INITIAL_HEALTH); // Reset health for new life
-                      setInvulnerable(true);
-                      setTimeout(() => {
-                        setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
-                        setInvulnerable(false);
-                      }, 100);
-                    }
-                    return newLives;
-                  });
-                } else {
-                  // Brief invulnerability after bullet hit
-                  setInvulnerable(true);
-                  setTimeout(() => setInvulnerable(false), 500);
-                }
-                return newHealth <= 0 ? INITIAL_HEALTH : newHealth;
-              });
-              setAlienBullets([]);
-            }
-            
-            if (hitByAlien) {
-              // Alien collision = instant full life loss
-              setLives(prev => {
-                const newLives = prev - 1;
+          if (hitBullet) {
+            wasHitByBullet = true;
+            return prevBullets.filter(b => b.id !== hitBullet.id);
+          }
+          return prevBullets;
+        });
+        
+        // Check alien collision
+        aliens.forEach(a => {
+          if (Math.abs(a.x - player.x) < 20 && Math.abs(a.y - player.y) < 20) {
+            wasHitByAlien = true;
+          }
+        });
+        
+        if (wasHitByBullet) {
+          playHitSound();
+          setHitEffect(true);
+          setTimeout(() => setHitEffect(false), 300);
+          
+          setHealth(prevHealth => {
+            const newHealth = prevHealth - 1;
+            if (newHealth <= 0) {
+              setLives(prevLives => {
+                const newLives = prevLives - 1;
                 if (newLives <= 0) {
                   setGameState('gameOver');
                 } else {
-                  setHealth(INITIAL_HEALTH);
                   setInvulnerable(true);
+                  setPlayerDirection(null);
                   setTimeout(() => {
                     setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
                     setInvulnerable(false);
-                  }, 100);
+                  }, 1000);
                 }
                 return newLives;
               });
-              setAlienBullets([]);
+              return INITIAL_HEALTH;
+            } else {
+              setInvulnerable(true);
+              setTimeout(() => setInvulnerable(false), 500);
             }
-            
-            return aliens;
+            return newHealth;
           });
+        }
+        
+        if (wasHitByAlien) {
+          playHitSound();
+          setHitEffect(true);
+          setTimeout(() => setHitEffect(false), 300);
           
-          return p;
-        });
+          setLives(prev => {
+            const newLives = prev - 1;
+            if (newLives <= 0) {
+              setGameState('gameOver');
+            } else {
+              setHealth(INITIAL_HEALTH);
+              setInvulnerable(true);
+              setPlayerDirection(null);
+              setTimeout(() => {
+                setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
+                setInvulnerable(false);
+              }, 1000);
+            }
+            return newLives;
+          });
+          setAlienBullets([]);
+        }
       }
 
       // Check pickups
@@ -618,7 +666,7 @@ export default function Crossfire() {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameState, level, invulnerable, initLevel]);
+  }, [gameState, level, invulnerable, initLevel, player, aliens, playerDirection]);
 
   // Crystal spawning
   useEffect(() => {
@@ -717,6 +765,19 @@ export default function Crossfire() {
                 transform: 'translate(-50%, -50%)'
               }}
             >
+              {hitEffect && (
+                <div 
+                  className="absolute animate-ping"
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255,100,0,0.8) 0%, rgba(255,50,0,0.4) 50%, transparent 70%)',
+                    transform: 'translate(-25%, -25%)',
+                    zIndex: 10
+                  }}
+                />
+              )}
               <img 
                 src={SHIP_IMAGE} 
                 alt="ship" 
@@ -724,7 +785,8 @@ export default function Crossfire() {
                   width: '32px', 
                   height: '32px',
                   imageRendering: 'pixelated',
-                  objectFit: 'contain'
+                  objectFit: 'contain',
+                  filter: hitEffect ? 'brightness(2) sepia(1) saturate(5) hue-rotate(-20deg)' : 'none'
                 }} 
               />
             </div>
