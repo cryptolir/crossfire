@@ -340,54 +340,37 @@ export default function Crossfire() {
         return p;
       });
 
-      // Pac-Man style continuous movement - update direction on key press
-      if (keysPressed.current['ArrowUp']) {
-        setPlayerDirection('up');
-      } else if (keysPressed.current['ArrowDown']) {
-        setPlayerDirection('down');
-      } else if (keysPressed.current['ArrowLeft']) {
-        setPlayerDirection('left');
-      } else if (keysPressed.current['ArrowRight']) {
-        setPlayerDirection('right');
-      }
-
-      // Move player continuously in current direction
+      // Smooth continuous movement while arrow key is held
       setPlayer(prevPlayer => {
-        let newTargetX = prevPlayer.targetX;
-        let newTargetY = prevPlayer.targetY;
-        const currentXIdx = getStreetIndex(prevPlayer.targetX);
-        const currentYIdx = getStreetIndex(prevPlayer.targetY);
+        const moveSpeed = 3; // Pixels per frame for smooth movement
+        let newX = prevPlayer.x;
+        let newY = prevPlayer.y;
         
-        // Check if player reached target - then set next target based on direction
-        const atTarget = Math.abs(prevPlayer.x - prevPlayer.targetX) < 2 && 
-                         Math.abs(prevPlayer.y - prevPlayer.targetY) < 2;
-        
-        if (atTarget && playerDirection) {
-          if (playerDirection === 'up') {
-            const nextIdx = currentYIdx > 0 ? currentYIdx - 1 : STREET_POSITIONS.length - 1;
-            newTargetY = STREET_POSITIONS[nextIdx];
-          } else if (playerDirection === 'down') {
-            const nextIdx = currentYIdx < STREET_POSITIONS.length - 1 ? currentYIdx + 1 : 0;
-            newTargetY = STREET_POSITIONS[nextIdx];
-          } else if (playerDirection === 'left') {
-            const nextIdx = currentXIdx > 0 ? currentXIdx - 1 : STREET_POSITIONS.length - 1;
-            newTargetX = STREET_POSITIONS[nextIdx];
-          } else if (playerDirection === 'right') {
-            const nextIdx = currentXIdx < STREET_POSITIONS.length - 1 ? currentXIdx + 1 : 0;
-            newTargetX = STREET_POSITIONS[nextIdx];
-          }
+        if (keysPressed.current['ArrowUp']) {
+          newY = prevPlayer.y - moveSpeed;
+        } else if (keysPressed.current['ArrowDown']) {
+          newY = prevPlayer.y + moveSpeed;
+        } else if (keysPressed.current['ArrowLeft']) {
+          newX = prevPlayer.x - moveSpeed;
+        } else if (keysPressed.current['ArrowRight']) {
+          newX = prevPlayer.x + moveSpeed;
         }
         
-        // Smooth interpolation towards target
-        const moveSpeed = 0.15;
-        const newX = prevPlayer.x + (newTargetX - prevPlayer.x) * moveSpeed;
-        const newY = prevPlayer.y + (newTargetY - prevPlayer.y) * moveSpeed;
+        // Snap to nearest street when moving perpendicular
+        if (keysPressed.current['ArrowUp'] || keysPressed.current['ArrowDown']) {
+          newX = snapToNearestStreet(newX);
+        }
+        if (keysPressed.current['ArrowLeft'] || keysPressed.current['ArrowRight']) {
+          newY = snapToNearestStreet(newY);
+        }
         
-        // Snap when very close to avoid jitter
-        const finalX = Math.abs(newTargetX - newX) < 1 ? newTargetX : newX;
-        const finalY = Math.abs(newTargetY - newY) < 1 ? newTargetY : newY;
+        // Wrap around edges
+        if (newX < STREET_POSITIONS[0]) newX = STREET_POSITIONS[STREET_POSITIONS.length - 1];
+        if (newX > STREET_POSITIONS[STREET_POSITIONS.length - 1]) newX = STREET_POSITIONS[0];
+        if (newY < STREET_POSITIONS[0]) newY = STREET_POSITIONS[STREET_POSITIONS.length - 1];
+        if (newY > STREET_POSITIONS[STREET_POSITIONS.length - 1]) newY = STREET_POSITIONS[0];
         
-        return { x: finalX, y: finalY, targetX: newTargetX, targetY: newTargetY };
+        return { x: newX, y: newY, targetX: newX, targetY: newY };
       });
 
       // Move aliens
@@ -666,7 +649,7 @@ export default function Crossfire() {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameState, level, invulnerable, initLevel, player, aliens, playerDirection]);
+  }, [gameState, level, invulnerable, initLevel, player, aliens]);
 
   // Crystal spawning
   useEffect(() => {
