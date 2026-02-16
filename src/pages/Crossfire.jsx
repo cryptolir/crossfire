@@ -109,6 +109,20 @@ export default function Crossfire() {
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
   const lastShotTime = useRef(0);
+  const playerRef = useRef(player);
+  const aliensRef = useRef(aliens);
+  const alienBulletsRef = useRef(alienBullets);
+  const invulnerableRef = useRef(invulnerable);
+  const healthRef = useRef(health);
+  const livesRef = useRef(lives);
+  
+  // Keep refs in sync
+  useEffect(() => { playerRef.current = player; }, [player]);
+  useEffect(() => { aliensRef.current = aliens; }, [aliens]);
+  useEffect(() => { alienBulletsRef.current = alienBullets; }, [alienBullets]);
+  useEffect(() => { invulnerableRef.current = invulnerable; }, [invulnerable]);
+  useEffect(() => { healthRef.current = health; }, [health]);
+  useEffect(() => { livesRef.current = lives; }, [lives]);
 
   const startGame = () => {
     setGameState('playing');
@@ -435,34 +449,21 @@ export default function Crossfire() {
         return remainingBullets.filter((_, idx) => !bulletsToRemove.has(idx));
       });
 
-      // Check player hit by alien bullets
-      if (!invulnerable) {
-        setPlayer(currentPlayer => {
-          let wasHitByBullet = false;
-          let wasHitByAlien = false;
-          
-          // Check bullet collision
-          setAlienBullets(prevBullets => {
-            const hitBullet = prevBullets.find(b => 
-              Math.abs(b.x - currentPlayer.x) < 15 && Math.abs(b.y - currentPlayer.y) < 15
-            );
-            
-            if (hitBullet) {
-              wasHitByBullet = true;
-              return prevBullets.filter(b => b.id !== hitBullet.id);
-            }
-            return prevBullets;
-          });
-          
-          // Check alien collision
-          setAliens(currentAliens => {
-            currentAliens.forEach(a => {
-              if (Math.abs(a.x - currentPlayer.x) < 20 && Math.abs(a.y - currentPlayer.y) < 20) {
-                wasHitByAlien = true;
-              }
-            });
-            return currentAliens;
-          });
+      // Check player hit by alien bullets - using refs for accurate collision detection
+      if (!invulnerableRef.current) {
+        const currentPlayer = playerRef.current;
+        const currentAlienBullets = alienBulletsRef.current;
+        const currentAliens = aliensRef.current;
+        
+        // Check bullet collision
+        const hitBullet = currentAlienBullets.find(b => 
+          Math.abs(b.x - currentPlayer.x) < 15 && Math.abs(b.y - currentPlayer.y) < 15
+        );
+        
+        // Check alien collision
+        const hitAlien = currentAliens.find(a => 
+          Math.abs(a.x - currentPlayer.x) < 20 && Math.abs(a.y - currentPlayer.y) < 20
+        );
         
         // Helper to push aliens away from center
         const pushAliensAway = () => {
@@ -472,12 +473,10 @@ export default function Crossfire() {
             const dx = alien.x - centerX;
             const dy = alien.y - centerY;
             
-            // Push alien 2-3 blocks away from center
             let newTargetX = alien.targetX;
             let newTargetY = alien.targetY;
             
             if (Math.abs(dx) >= Math.abs(dy)) {
-              // Push horizontally
               const currentIdx = getStreetIndex(alien.x);
               if (dx >= 0) {
                 newTargetX = STREET_POSITIONS[Math.min(currentIdx + 2, STREET_POSITIONS.length - 1)];
@@ -485,7 +484,6 @@ export default function Crossfire() {
                 newTargetX = STREET_POSITIONS[Math.max(currentIdx - 2, 0)];
               }
             } else {
-              // Push vertically
               const currentIdx = getStreetIndex(alien.y);
               if (dy >= 0) {
                 newTargetY = STREET_POSITIONS[Math.min(currentIdx + 2, STREET_POSITIONS.length - 1)];
@@ -498,64 +496,59 @@ export default function Crossfire() {
           }));
         };
 
-        if (wasHitByBullet) {
-            playHitSound();
-            setHitEffect(true);
-            setTimeout(() => setHitEffect(false), 300);
-            
-            setHealth(prevHealth => {
-              const newHealth = prevHealth - 1;
-              if (newHealth <= 0) {
-                setLives(prevLives => {
-                  const newLives = prevLives - 1;
-                  if (newLives <= 0) {
-                    setGameState('gameOver');
-                  } else {
-                    setInvulnerable(true);
-                    setPlayerDirection(null);
-                    pushAliensAway();
-                    setTimeout(() => {
-                      setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
-                      setInvulnerable(false);
-                    }, 1000);
-                  }
-                  return newLives;
-                });
-                return INITIAL_HEALTH;
-              } else {
-                setInvulnerable(true);
-                setTimeout(() => setInvulnerable(false), 500);
-              }
-              return newHealth;
-            });
-          }
-        
-        if (wasHitByAlien) {
-            playHitSound();
-            setHitEffect(true);
-            setTimeout(() => setHitEffect(false), 300);
-            
-            setLives(prev => {
-              const newLives = prev - 1;
-              if (newLives <= 0) {
-                setGameState('gameOver');
-              } else {
-                setHealth(INITIAL_HEALTH);
-                setInvulnerable(true);
-                setPlayerDirection(null);
-                pushAliensAway();
-                setTimeout(() => {
-                  setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
-                  setInvulnerable(false);
-                }, 1000);
-              }
-              return newLives;
-            });
-            setAlienBullets([]);
-          }
+        if (hitBullet) {
+          playHitSound();
+          setHitEffect(true);
+          setTimeout(() => setHitEffect(false), 300);
+          setAlienBullets(prev => prev.filter(b => b.id !== hitBullet.id));
           
-          return currentPlayer;
-        });
+          const newHealth = healthRef.current - 1;
+          setHealth(newHealth);
+          
+          if (newHealth <= 0) {
+            const newLives = livesRef.current - 1;
+            setLives(newLives);
+            setHealth(INITIAL_HEALTH);
+            
+            if (newLives <= 0) {
+              setGameState('gameOver');
+            } else {
+              setInvulnerable(true);
+              setPlayerDirection(null);
+              pushAliensAway();
+              setTimeout(() => {
+                setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
+                setInvulnerable(false);
+              }, 1000);
+            }
+          } else {
+            setInvulnerable(true);
+            setTimeout(() => setInvulnerable(false), 500);
+          }
+        }
+        
+        if (hitAlien) {
+          playHitSound();
+          setHitEffect(true);
+          setTimeout(() => setHitEffect(false), 300);
+          
+          const newLives = livesRef.current - 1;
+          setLives(newLives);
+          setHealth(INITIAL_HEALTH);
+          setAlienBullets([]);
+          
+          if (newLives <= 0) {
+            setGameState('gameOver');
+          } else {
+            setInvulnerable(true);
+            setPlayerDirection(null);
+            pushAliensAway();
+            setTimeout(() => {
+              setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
+              setInvulnerable(false);
+            }, 1000);
+          }
+        }
       }
 
       // Check pickups
