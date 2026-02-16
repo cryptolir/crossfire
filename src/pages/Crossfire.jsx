@@ -703,14 +703,23 @@ export default function Crossfire() {
         {gameState === 'menu' && (
           <div className="text-center space-y-4">
             <p className="text-xl">Defend your city from alien invaders!</p>
-            <div className="text-left inline-block space-y-2">
-              <p>🎮 Arrow Keys - Move in streets</p>
-              <p>🔫 W - Shoot Up | X - Shoot Down</p>
-              <p>🔫 A - Shoot Left | D - Shoot Right</p>
-              <p>💎 Collect crystals for bonus points</p>
+            <div className="text-left inline-block space-y-2 bg-gray-900 p-4 rounded-lg border border-cyan-500">
+              <p className="text-cyan-300 font-bold mb-2">🎮 CONTROLS:</p>
+              <p>⬆️⬇️⬅️➡️ Arrow Keys - Move continuously (Pac-Man style)</p>
+              <p className="text-yellow-300 font-bold mt-3 mb-2">🔫 SHOOTING:</p>
+              <p>W - Shoot Up</p>
+              <p>X - Shoot Down</p>
+              <p>A - Shoot Left</p>
+              <p>D - Shoot Right</p>
+              <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
+              <p>💎 Collect crystals for bonus points (100-800)</p>
               <p>📦 Grab ammo packs when running low</p>
-              <p>⭐ Extra life every 5000 points</p>
-              <p>⚠️ Aliens shoot from level 3!</p>
+              <p>⭐ Extra life every 5,000 points</p>
+              <p>❤️ Each life has 3 health points (♥♥♥)</p>
+              <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
+              <p>👾 Aliens start shooting from Level 3!</p>
+              <p>💥 Enemy bullets take 1 health point</p>
+              <p>☠️ Direct alien contact = instant life loss</p>
             </div>
             <button
               onClick={startGame}
