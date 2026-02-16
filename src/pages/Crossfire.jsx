@@ -108,6 +108,7 @@ export default function Crossfire() {
   
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
+  const lastShotTime = useRef(0);
 
   const startGame = () => {
     setGameState('playing');
@@ -210,135 +211,45 @@ export default function Crossfire() {
     gameLoopRef.current = setInterval(() => {
       const now = Date.now();
 
-      // Handle shooting (W, X, A, D) - only fire when player is on a street intersection
-      setPlayer(p => {
-        const onStreetX = STREET_POSITIONS.some(pos => Math.abs(p.x - pos) < 3);
-        const onStreetY = STREET_POSITIONS.some(pos => Math.abs(p.y - pos) < 3);
-        const atIntersection = onStreetX && onStreetY;
+      // Handle shooting (W, X, A, D) - simplified and more reliable
+      const shootCooldown = 150; // ms between shots
+      if (now - lastShotTime.current >= shootCooldown) {
+        const snappedX = snapToNearestStreet(player.x);
+        const snappedY = snapToNearestStreet(player.y);
         
-        if (!atIntersection) return p;
-        
-        const snappedX = snapToNearestStreet(p.x);
-        const snappedY = snapToNearestStreet(p.y);
+        let shotDirection = null;
         
         if (keysPressed.current['w'] || keysPressed.current['W']) {
+          shotDirection = { dx: 0, dy: -5 };
           keysPressed.current['w'] = false;
           keysPressed.current['W'] = false;
-          
-          setAmmo(prevAmmo => {
-            if (prevAmmo <= 0) return prevAmmo;
-            
-            setBullets(prevBullets => {
-              const xIdx = getStreetIndex(snappedX);
-              const bulletsInStreet = prevBullets.filter(b => 
-                getStreetIndex(b.x) === xIdx && b.dy !== 0
-              ).length;
-              
-              if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
-                return [...prevBullets, {
-                  id: Date.now() + Math.random(),
-                  x: snappedX,
-                  y: snappedY,
-                  dx: 0,
-                  dy: -5
-                }];
-              }
-              return prevBullets;
-            });
-            
-            return prevAmmo - 1;
-          });
-        }
-
-        if (keysPressed.current['x'] || keysPressed.current['X']) {
+        } else if (keysPressed.current['x'] || keysPressed.current['X']) {
+          shotDirection = { dx: 0, dy: 5 };
           keysPressed.current['x'] = false;
           keysPressed.current['X'] = false;
-          
-          setAmmo(prevAmmo => {
-            if (prevAmmo <= 0) return prevAmmo;
-            
-            setBullets(prevBullets => {
-              const xIdx = getStreetIndex(snappedX);
-              const bulletsInStreet = prevBullets.filter(b => 
-                getStreetIndex(b.x) === xIdx && b.dy !== 0
-              ).length;
-              
-              if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
-                return [...prevBullets, {
-                  id: Date.now() + Math.random(),
-                  x: snappedX,
-                  y: snappedY,
-                  dx: 0,
-                  dy: 5
-                }];
-              }
-              return prevBullets;
-            });
-            
-            return prevAmmo - 1;
-          });
-        }
-
-        if (keysPressed.current['a'] || keysPressed.current['A']) {
+        } else if (keysPressed.current['a'] || keysPressed.current['A']) {
+          shotDirection = { dx: -5, dy: 0 };
           keysPressed.current['a'] = false;
           keysPressed.current['A'] = false;
-          
-          setAmmo(prevAmmo => {
-            if (prevAmmo <= 0) return prevAmmo;
-            
-            setBullets(prevBullets => {
-              const yIdx = getStreetIndex(snappedY);
-              const bulletsInStreet = prevBullets.filter(b => 
-                getStreetIndex(b.y) === yIdx && b.dx !== 0
-              ).length;
-              
-              if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
-                return [...prevBullets, {
-                  id: Date.now() + Math.random(),
-                  x: snappedX,
-                  y: snappedY,
-                  dx: -5,
-                  dy: 0
-                }];
-              }
-              return prevBullets;
-            });
-            
-            return prevAmmo - 1;
-          });
-        }
-
-        if (keysPressed.current['d'] || keysPressed.current['D']) {
+        } else if (keysPressed.current['d'] || keysPressed.current['D']) {
+          shotDirection = { dx: 5, dy: 0 };
           keysPressed.current['d'] = false;
           keysPressed.current['D'] = false;
-          
-          setAmmo(prevAmmo => {
-            if (prevAmmo <= 0) return prevAmmo;
-            
-            setBullets(prevBullets => {
-              const yIdx = getStreetIndex(snappedY);
-              const bulletsInStreet = prevBullets.filter(b => 
-                getStreetIndex(b.y) === yIdx && b.dx !== 0
-              ).length;
-              
-              if (bulletsInStreet < MAX_BULLETS_PER_STREET) {
-                return [...prevBullets, {
-                  id: Date.now() + Math.random(),
-                  x: snappedX,
-                  y: snappedY,
-                  dx: 5,
-                  dy: 0
-                }];
-              }
-              return prevBullets;
-            });
-            
-            return prevAmmo - 1;
-          });
         }
         
-        return p;
-      });
+        if (shotDirection && ammo > 0) {
+          playShootSound();
+          lastShotTime.current = now;
+          setAmmo(prev => prev - 1);
+          setBullets(prev => [...prev, {
+            id: now + Math.random(),
+            x: snappedX,
+            y: snappedY,
+            dx: shotDirection.dx,
+            dy: shotDirection.dy
+          }]);
+        }
+      }
 
       // Smooth continuous movement while arrow key is held
       setPlayer(prevPlayer => {
@@ -649,7 +560,7 @@ export default function Crossfire() {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameState, level, invulnerable, initLevel, player, aliens]);
+  }, [gameState, level, invulnerable, initLevel, player, aliens, ammo]);
 
   // Crystal spawning
   useEffect(() => {
@@ -719,7 +630,17 @@ export default function Crossfire() {
           <div className="flex gap-8 mb-4 text-white text-xl">
             <div>Level: <span className="text-cyan-400 font-bold">{level}</span></div>
             <div>Score: <span className="text-yellow-400 font-bold">{score}</span></div>
-            <div>Lives: <span className="text-red-400 font-bold">{lives}</span> <span className="text-pink-400">({'♥'.repeat(health)}{'♡'.repeat(INITIAL_HEALTH - health)})</span></div>
+            <div className="flex items-center gap-2">
+              <span>Lives: <span className="text-red-400 font-bold">{lives}</span></span>
+              <div className="flex gap-0.5">
+                {[0, 1, 2].map(i => (
+                  <div 
+                    key={i}
+                    className={`w-4 h-3 border border-pink-400 ${i < health ? 'bg-pink-500' : 'bg-gray-700'}`}
+                  />
+                ))}
+              </div>
+            </div>
             <div>Ammo: <span className={`font-bold ${ammo < 10 ? 'text-red-500' : 'text-green-400'}`}>{ammo}</span></div>
           </div>
 
