@@ -6,6 +6,7 @@ const BLOCK_SIZE = 60;
 const STREET_WIDTH = 20;
 const TOTAL_SIZE = GRID_BLOCKS * (BLOCK_SIZE + STREET_WIDTH) + STREET_WIDTH;
 const INITIAL_LIVES = 3;
+const INITIAL_HEALTH = 3; // 3 hits per life
 const INITIAL_AMMO = 50;
 const AMMO_PACK_AMOUNT = 30;
 const CRYSTAL_VALUES = [100, 200, 400, 800];
@@ -72,6 +73,7 @@ export default function Crossfire() {
   const [ammoPacks, setAmmoPacks] = useState([]);
   const [lastExtraLife, setLastExtraLife] = useState(0);
   const [invulnerable, setInvulnerable] = useState(false);
+  const [health, setHealth] = useState(INITIAL_HEALTH);
   
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
@@ -82,6 +84,7 @@ export default function Crossfire() {
     setScore(0);
     setLives(INITIAL_LIVES);
     setAmmo(INITIAL_AMMO);
+    setHealth(INITIAL_HEALTH);
     setLastExtraLife(0);
     initLevel(1);
   };
@@ -515,12 +518,44 @@ export default function Crossfire() {
               Math.abs(a.x - p.x) < 20 && Math.abs(a.y - p.y) < 20
             );
             
-            if (hitByBullet || hitByAlien) {
+            if (hitByBullet) {
+              // Enemy bullet takes 1/3 of a life (1 health point)
+              setHealth(prevHealth => {
+                const newHealth = prevHealth - 1;
+                if (newHealth <= 0) {
+                  // Lost a full life
+                  setLives(prevLives => {
+                    const newLives = prevLives - 1;
+                    if (newLives <= 0) {
+                      setGameState('gameOver');
+                    } else {
+                      setHealth(INITIAL_HEALTH); // Reset health for new life
+                      setInvulnerable(true);
+                      setTimeout(() => {
+                        setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
+                        setInvulnerable(false);
+                      }, 100);
+                    }
+                    return newLives;
+                  });
+                } else {
+                  // Brief invulnerability after bullet hit
+                  setInvulnerable(true);
+                  setTimeout(() => setInvulnerable(false), 500);
+                }
+                return newHealth <= 0 ? INITIAL_HEALTH : newHealth;
+              });
+              setAlienBullets([]);
+            }
+            
+            if (hitByAlien) {
+              // Alien collision = instant full life loss
               setLives(prev => {
                 const newLives = prev - 1;
                 if (newLives <= 0) {
                   setGameState('gameOver');
                 } else {
+                  setHealth(INITIAL_HEALTH);
                   setInvulnerable(true);
                   setTimeout(() => {
                     setPlayer({ x: STREET_POSITIONS[3], y: STREET_POSITIONS[3], targetX: STREET_POSITIONS[3], targetY: STREET_POSITIONS[3] });
@@ -644,7 +679,7 @@ export default function Crossfire() {
           <div className="flex gap-8 mb-4 text-white text-xl">
             <div>Level: <span className="text-cyan-400 font-bold">{level}</span></div>
             <div>Score: <span className="text-yellow-400 font-bold">{score}</span></div>
-            <div>Lives: <span className="text-red-400 font-bold">{lives}</span></div>
+            <div>Lives: <span className="text-red-400 font-bold">{lives}</span> <span className="text-pink-400">({'♥'.repeat(health)}{'♡'.repeat(INITIAL_HEALTH - health)})</span></div>
             <div>Ammo: <span className={`font-bold ${ammo < 10 ? 'text-red-500' : 'text-green-400'}`}>{ammo}</span></div>
           </div>
 
@@ -686,9 +721,10 @@ export default function Crossfire() {
                 src={SHIP_IMAGE} 
                 alt="ship" 
                 style={{ 
-                  width: '28px', 
-                  height: '12px',
-                  imageRendering: 'pixelated'
+                  width: '32px', 
+                  height: '32px',
+                  imageRendering: 'pixelated',
+                  objectFit: 'contain'
                 }} 
               />
             </div>
