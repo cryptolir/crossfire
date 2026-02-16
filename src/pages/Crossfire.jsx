@@ -350,49 +350,55 @@ export default function Crossfire() {
       // Move aliens
       setAliens(prev => {
         return prev.map(alien => {
-          const baseDelay = 1000; // 70% slower at level 1 (was 300ms, now 1000ms)
-          const speedMultiplier = Math.pow(0.98, level - 1); // 2% faster each level
-          const moveDelay = baseDelay * speedMultiplier;
-          if (now - alien.lastMove < moveDelay) return alien;
+          // Skip movement logic here - handled by smooth interpolation below
+          if (!alien.targetX) alien.targetX = alien.x;
+          if (!alien.targetY) alien.targetY = alien.y;
+          
+          const baseSpeed = 0.03; // 40% slower base speed
+          const speedMultiplier = 1 + (level - 1) * 0.02; // 2% faster each level
+          const moveSpeed = baseSpeed * speedMultiplier;
+          
+          // Update target periodically
+          const atTarget = Math.abs(alien.x - alien.targetX) < 2 && Math.abs(alien.y - alien.targetY) < 2;
+          if (atTarget && now - alien.lastMove > 500) {
+            alien.lastMove = now;
           
           setPlayer(p => {
-            const dx = p.x - alien.x;
-            const dy = p.y - alien.y;
-            
-            let moveX = alien.x;
-            let moveY = alien.y;
-            
-            // Move along streets towards player
-            if (Math.abs(dx) > Math.abs(dy)) {
-              const currentIdx = getStreetIndex(alien.x);
-              if (dx > 0 && currentIdx < STREET_POSITIONS.length - 1) {
-                moveX = STREET_POSITIONS[currentIdx + 1];
-              } else if (dx < 0 && currentIdx > 0) {
-                moveX = STREET_POSITIONS[currentIdx - 1];
-              } else if (dx > 0) {
-                moveX = STREET_POSITIONS[0]; // wraparound
+              const dx = p.x - alien.x;
+              const dy = p.y - alien.y;
+              
+              // Set new target along streets towards player
+              if (Math.abs(dx) > Math.abs(dy)) {
+                const currentIdx = getStreetIndex(alien.targetX);
+                if (dx > 0 && currentIdx < STREET_POSITIONS.length - 1) {
+                  alien.targetX = STREET_POSITIONS[currentIdx + 1];
+                } else if (dx < 0 && currentIdx > 0) {
+                  alien.targetX = STREET_POSITIONS[currentIdx - 1];
+                } else if (dx > 0) {
+                  alien.targetX = STREET_POSITIONS[0];
+                } else {
+                  alien.targetX = STREET_POSITIONS[STREET_POSITIONS.length - 1];
+                }
               } else {
-                moveX = STREET_POSITIONS[STREET_POSITIONS.length - 1]; // wraparound
+                const currentIdx = getStreetIndex(alien.targetY);
+                if (dy > 0 && currentIdx < STREET_POSITIONS.length - 1) {
+                  alien.targetY = STREET_POSITIONS[currentIdx + 1];
+                } else if (dy < 0 && currentIdx > 0) {
+                  alien.targetY = STREET_POSITIONS[currentIdx - 1];
+                } else if (dy > 0) {
+                  alien.targetY = STREET_POSITIONS[0];
+                } else {
+                  alien.targetY = STREET_POSITIONS[STREET_POSITIONS.length - 1];
+                }
               }
-            } else {
-              const currentIdx = getStreetIndex(alien.y);
-              if (dy > 0 && currentIdx < STREET_POSITIONS.length - 1) {
-                moveY = STREET_POSITIONS[currentIdx + 1];
-              } else if (dy < 0 && currentIdx > 0) {
-                moveY = STREET_POSITIONS[currentIdx - 1];
-              } else if (dy > 0) {
-                moveY = STREET_POSITIONS[0]; // wraparound
-              } else {
-                moveY = STREET_POSITIONS[STREET_POSITIONS.length - 1]; // wraparound
-              }
-            }
-            
-            alien.x = moveX;
-            alien.y = moveY;
-            alien.lastMove = now;
-            
-            return p;
-          });
+              
+              return p;
+            });
+          }
+          
+          // Smooth interpolation towards target
+          alien.x = alien.x + (alien.targetX - alien.x) * moveSpeed;
+          alien.y = alien.y + (alien.targetY - alien.y) * moveSpeed;
           
           return alien;
         });
@@ -676,7 +682,7 @@ export default function Crossfire() {
                   left: alien.x,
                   top: alien.y,
                   transform: 'translate(-50%, -50%)',
-                  transition: 'left 0.3s, top 0.3s'
+                  transition: 'none'
                 }}
               >
                 <div className="text-2xl">👾</div>
