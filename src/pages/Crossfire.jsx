@@ -113,6 +113,7 @@ export default function Crossfire() {
   const playerRef = useRef(player);
   const aliensRef = useRef(aliens);
   const alienBulletsRef = useRef(alienBullets);
+  const bulletsRef = useRef(bullets);
   const invulnerableRef = useRef(invulnerable);
   const healthRef = useRef(health);
   const livesRef = useRef(lives);
@@ -121,6 +122,7 @@ export default function Crossfire() {
   useEffect(() => { playerRef.current = player; }, [player]);
   useEffect(() => { aliensRef.current = aliens; }, [aliens]);
   useEffect(() => { alienBulletsRef.current = alienBullets; }, [alienBullets]);
+  useEffect(() => { bulletsRef.current = bullets; }, [bullets]);
   useEffect(() => { invulnerableRef.current = invulnerable; }, [invulnerable]);
   useEffect(() => { healthRef.current = health; }, [health]);
   useEffect(() => { livesRef.current = lives; }, [lives]);
@@ -430,31 +432,31 @@ export default function Crossfire() {
         )
       );
 
-      // Check bullet/alien collisions
-      setBullets(prevBullets => {
-        const bulletsToRemove = new Set();
-        
-        setAliens(prevAliens => {
-          const remainingAliens = prevAliens.filter(alien => {
-            // Find first bullet that hits this alien (and hasn't already hit another alien)
-            const hitBulletIdx = prevBullets.findIndex((b, idx) => 
-              !bulletsToRemove.has(idx) && 
-              Math.abs(b.x - alien.x) < 20 && Math.abs(b.y - alien.y) < 20
-            );
-            
-            if (hitBulletIdx !== -1) {
-              bulletsToRemove.add(hitBulletIdx);
-              setScore(s => s + 100 * level);
-              return false;
-            }
-            return true;
-          });
+      // Check bullet/alien collisions - using refs for accurate detection
+      const currentBullets = bulletsRef.current;
+      const currentAliensForCollision = aliensRef.current;
+      const bulletIdsToRemove = new Set();
+      const alienIdsToRemove = new Set();
+      
+      for (const alien of currentAliensForCollision) {
+        for (const bullet of currentBullets) {
+          if (bulletIdsToRemove.has(bullet.id)) continue; // Bullet already used
           
-          return remainingAliens;
-        });
-        
-        return prevBullets.filter((_, idx) => !bulletsToRemove.has(idx));
-      });
+          if (Math.abs(bullet.x - alien.x) < 20 && Math.abs(bullet.y - alien.y) < 20) {
+            bulletIdsToRemove.add(bullet.id);
+            alienIdsToRemove.add(alien.id);
+            setScore(s => s + 100 * level);
+            break; // This alien is hit, move to next alien
+          }
+        }
+      }
+      
+      if (bulletIdsToRemove.size > 0) {
+        setBullets(prev => prev.filter(b => !bulletIdsToRemove.has(b.id)));
+      }
+      if (alienIdsToRemove.size > 0) {
+        setAliens(prev => prev.filter(a => !alienIdsToRemove.has(a.id)));
+      }
 
       // Check player hit by alien bullets - using refs for accurate collision detection
       if (!invulnerableRef.current) {
