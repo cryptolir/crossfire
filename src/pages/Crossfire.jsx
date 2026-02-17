@@ -10,7 +10,7 @@ const INITIAL_HEALTH = 3; // 3 hits per life
 const INITIAL_AMMO = 50;
 const AMMO_PACK_AMOUNT = 30;
 const CRYSTAL_VALUES = [100, 200, 400, 800];
-const EXTRA_LIFE_SCORE = 5000;
+const EXTRA_LIFE_SCORE = 15000;
 const MAX_BULLETS_PER_STREET = 2;
 
 const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/ee90ec378_image.png";
@@ -426,17 +426,18 @@ export default function Crossfire() {
 
       // Check bullet/alien collisions
       setBullets(prevBullets => {
-        const remainingBullets = [...prevBullets];
         const bulletsToRemove = new Set();
         
         setAliens(prevAliens => {
           const remainingAliens = prevAliens.filter(alien => {
-            const hitBullet = remainingBullets.findIndex(b => 
+            // Find first bullet that hits this alien (and hasn't already hit another alien)
+            const hitBulletIdx = prevBullets.findIndex((b, idx) => 
+              !bulletsToRemove.has(idx) && 
               Math.abs(b.x - alien.x) < 20 && Math.abs(b.y - alien.y) < 20
             );
             
-            if (hitBullet !== -1) {
-              bulletsToRemove.add(hitBullet);
+            if (hitBulletIdx !== -1) {
+              bulletsToRemove.add(hitBulletIdx);
               setScore(s => s + 100 * level);
               return false;
             }
@@ -446,7 +447,7 @@ export default function Crossfire() {
           return remainingAliens;
         });
         
-        return remainingBullets.filter((_, idx) => !bulletsToRemove.has(idx));
+        return prevBullets.filter((_, idx) => !bulletsToRemove.has(idx));
       });
 
       // Check player hit by alien bullets - using refs for accurate collision detection
@@ -643,7 +644,7 @@ export default function Crossfire() {
               <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
               <p>💎 Collect crystals for bonus points (100-800)</p>
               <p>📦 Grab ammo packs when running low</p>
-              <p>⭐ Extra life every 5,000 points</p>
+              <p>⭐ Extra life every 15,000 points</p>
               <p>❤️ Each life has 3 health points (♥♥♥)</p>
               <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
               <p>👾 Aliens start shooting from Level 3!</p>
