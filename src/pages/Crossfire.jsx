@@ -85,6 +85,7 @@ const getStreetIndex = (pos) => {
 
 export default function Crossfire() {
   const [gameState, setGameState] = useState('menu');
+  const [paused, setPaused] = useState(false);
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
@@ -202,6 +203,11 @@ export default function Crossfire() {
   // Keyboard input
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === ' ' && gameState === 'playing') {
+        e.preventDefault();
+        setPaused(p => !p);
+        return;
+      }
       keysPressed.current[e.key] = true;
     };
 
@@ -220,7 +226,7 @@ export default function Crossfire() {
 
   // Main game loop
   useEffect(() => {
-    if (gameState !== 'playing') return;
+    if (gameState !== 'playing' || paused) return;
 
     gameLoopRef.current = setInterval(() => {
       const now = Date.now();
@@ -596,7 +602,7 @@ export default function Crossfire() {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameState, level, invulnerable, initLevel, player, aliens, ammo]);
+  }, [gameState, level, invulnerable, initLevel, player, aliens, ammo, paused]);
 
   // Crystal spawning
   useEffect(() => {
@@ -679,6 +685,15 @@ export default function Crossfire() {
             </div>
             <div>Ammo: <span className={`font-bold ${ammo < 10 ? 'text-red-500' : 'text-green-400'}`}>{ammo}</span></div>
           </div>
+
+          {paused && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-50">
+              <div className="text-center text-white">
+                <h2 className="text-4xl font-bold text-cyan-400 mb-4">PAUSED</h2>
+                <p className="text-xl">Press SPACE to continue</p>
+              </div>
+            </div>
+          )}
 
           <div 
             className="relative border-4 border-blue-600"
