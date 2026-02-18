@@ -10,7 +10,7 @@ const INITIAL_HEALTH = 3; // 3 hits per life
 const INITIAL_AMMO = 50;
 const AMMO_PACK_AMOUNT = 30;
 const CRYSTAL_VALUES = [100, 200, 400, 800];
-const EXTRA_LIFE_SCORE = 15000;
+const EXTRA_LIFE_SCORE = 25000;
 const MAX_BULLETS_PER_STREET = 2;
 
 const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/ee90ec378_image.png";
@@ -667,7 +667,7 @@ export default function Crossfire() {
               <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
               <p>💎 Collect crystals for bonus points (100-800)</p>
               <p>📦 Grab ammo packs when running low</p>
-              <p>⭐ Extra life every 15,000 points</p>
+              <p>⭐ Extra life every 25,000 points</p>
               <p>❤️ Each life has 3 health points (♥♥♥)</p>
               <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
               <p>👾 Aliens start shooting from Level 3!</p>
