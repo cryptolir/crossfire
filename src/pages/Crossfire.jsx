@@ -15,9 +15,18 @@ const MAX_BULLETS_PER_STREET = 2;
 
 const SHIP_IMAGE = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699253987abdb75e6f27be7a/ee90ec378_image.png";
 
+// Shared AudioContext to prevent memory leaks
+let sharedAudioCtx = null;
+const getAudioContext = () => {
+  if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+    sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return sharedAudioCtx;
+};
+
 // Sound effects
 const playHitSound = () => {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioCtx = getAudioContext();
   const oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
   oscillator.connect(gainNode);
@@ -31,7 +40,7 @@ const playHitSound = () => {
 };
 
 const playShootSound = () => {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioCtx = getAudioContext();
   const oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
   oscillator.connect(gainNode);
@@ -117,6 +126,8 @@ export default function Crossfire() {
   const invulnerableRef = useRef(invulnerable);
   const healthRef = useRef(health);
   const livesRef = useRef(lives);
+  const levelRef = useRef(level);
+  const ammoRef = useRef(ammo);
   
   // Keep refs in sync
   useEffect(() => { playerRef.current = player; }, [player]);
@@ -126,6 +137,8 @@ export default function Crossfire() {
   useEffect(() => { invulnerableRef.current = invulnerable; }, [invulnerable]);
   useEffect(() => { healthRef.current = health; }, [health]);
   useEffect(() => { livesRef.current = lives; }, [lives]);
+  useEffect(() => { levelRef.current = level; }, [level]);
+  useEffect(() => { ammoRef.current = ammo; }, [ammo]);
 
   const startGame = () => {
     setGameState('playing');
@@ -236,8 +249,9 @@ export default function Crossfire() {
       // Handle shooting (W, X, A, D) - simplified and more reliable
       const shootCooldown = 150; // ms between shots
       if (now - lastShotTime.current >= shootCooldown) {
-        const snappedX = snapToNearestStreet(player.x);
-        const snappedY = snapToNearestStreet(player.y);
+        const currentPlayer = playerRef.current;
+        const snappedX = snapToNearestStreet(currentPlayer.x);
+        const snappedY = snapToNearestStreet(currentPlayer.y);
         
         let shotDirection = null;
         
@@ -259,7 +273,7 @@ export default function Crossfire() {
           keysPressed.current['D'] = false;
         }
         
-        if (shotDirection && ammo > 0) {
+        if (shotDirection && ammoRef.current > 0) {
           playShootSound();
           lastShotTime.current = now;
           setAmmo(prev => prev - 1);
@@ -308,13 +322,14 @@ export default function Crossfire() {
 
       // Move aliens
       setAliens(prev => {
+        const currentLevel = levelRef.current;
         return prev.map(alien => {
           // Skip movement logic here - handled by smooth interpolation below
           if (!alien.targetX) alien.targetX = alien.x;
           if (!alien.targetY) alien.targetY = alien.y;
           
           const baseSpeed = 0.03; // 40% slower base speed
-          const speedMultiplier = 1 + (level - 1) * 0.02; // 2% faster each level
+          const speedMultiplier = 1 + (currentLevel - 1) * 0.02; // 2% faster each level
           const moveSpeed = baseSpeed * speedMultiplier;
           
           // Update target periodically
@@ -364,7 +379,7 @@ export default function Crossfire() {
       });
 
       // Aliens shoot (level 3+) - only in streets (cardinal directions)
-      if (level >= 3) {
+      if (levelRef.current >= 3) {
         setAliens(prev => {
           const shootingAliens = prev.filter(alien => {
             if (now - alien.lastShot < 1500) return false;
@@ -445,7 +460,7 @@ export default function Crossfire() {
           if (Math.abs(bullet.x - alien.x) < 20 && Math.abs(bullet.y - alien.y) < 20) {
             bulletIdsToRemove.add(bullet.id);
             alienIdsToRemove.add(alien.id);
-            setScore(s => s + 100 * level);
+            setScore(s => s + 100 * levelRef.current);
             break; // This alien is hit, move to next alien
           }
         }
@@ -604,7 +619,7 @@ export default function Crossfire() {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameState, level, invulnerable, initLevel, player, aliens, ammo, paused]);
+  }, [gameState, paused, initLevel]);
 
   // Crystal spawning
   useEffect(() => {
