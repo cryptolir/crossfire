@@ -114,8 +114,7 @@ export default function Crossfire() {
   const [invulnerable, setInvulnerable] = useState(false);
   const [health, setHealth] = useState(INITIAL_HEALTH);
   const [hitEffect, setHitEffect] = useState(false);
-  const [playerDirection, setPlayerDirection] = useState('right');
-  const [playerRotation, setPlayerRotation] = useState(0);
+  const [playerDirection, setPlayerDirection] = useState(null);
   
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
@@ -288,47 +287,28 @@ export default function Crossfire() {
         }
       }
 
-      // Tank-style movement: rotate with left/right, move forward/back
+      // Smooth continuous movement while arrow key is held
       setPlayer(prevPlayer => {
-        const moveSpeed = 2.5;
+        const moveSpeed = 3;
         let newX = prevPlayer.x;
         let newY = prevPlayer.y;
-        let newRotation = playerRotation;
-        let moved = false;
         
-        // Rotation
-        if (keysPressed.current['ArrowLeft']) {
-          newRotation -= 3;
-          setPlayerRotation(newRotation);
-        } else if (keysPressed.current['ArrowRight']) {
-          newRotation += 3;
-          setPlayerRotation(newRotation);
-        }
-        
-        // Forward/backward movement in rotation direction
         if (keysPressed.current['ArrowUp']) {
-          const rad = (newRotation * Math.PI) / 180;
-          newX = prevPlayer.x + Math.cos(rad) * moveSpeed;
-          newY = prevPlayer.y + Math.sin(rad) * moveSpeed;
-          moved = true;
+          newY = prevPlayer.y - moveSpeed;
         } else if (keysPressed.current['ArrowDown']) {
-          const rad = (newRotation * Math.PI) / 180;
-          newX = prevPlayer.x - Math.cos(rad) * moveSpeed;
-          newY = prevPlayer.y - Math.sin(rad) * moveSpeed;
-          moved = true;
+          newY = prevPlayer.y + moveSpeed;
+        } else if (keysPressed.current['ArrowLeft']) {
+          newX = prevPlayer.x - moveSpeed;
+        } else if (keysPressed.current['ArrowRight']) {
+          newX = prevPlayer.x + moveSpeed;
         }
         
-        // Only snap to streets if we moved
-        if (moved) {
-          const snapThreshold = 15;
-          for (let streetPos of STREET_POSITIONS) {
-            if (Math.abs(newX - streetPos) < snapThreshold) {
-              newX = streetPos;
-            }
-            if (Math.abs(newY - streetPos) < snapThreshold) {
-              newY = streetPos;
-            }
-          }
+        // Snap to nearest street when moving perpendicular
+        if (keysPressed.current['ArrowUp'] || keysPressed.current['ArrowDown']) {
+          newX = snapToNearestStreet(newX);
+        }
+        if (keysPressed.current['ArrowLeft'] || keysPressed.current['ArrowRight']) {
+          newY = snapToNearestStreet(newY);
         }
         
         // Wrap around edges
@@ -678,9 +658,7 @@ export default function Crossfire() {
             <p className="text-xl">Defend your city from alien invaders!</p>
             <div className="text-left inline-block space-y-2 bg-gray-900 p-4 rounded-lg border border-cyan-500">
               <p className="text-cyan-300 font-bold mb-2">🎮 CONTROLS:</p>
-              <p>⬅️➡️ Left/Right - Rotate ship</p>
-              <p>⬆️ Up - Move forward</p>
-              <p>⬇️ Down - Move backward</p>
+              <p>⬆️⬇️⬅️➡️ Arrow Keys - Move continuously (Pac-Man style)</p>
               <p className="text-yellow-300 font-bold mt-3 mb-2">🔫 SHOOTING:</p>
               <p>W - Shoot Up</p>
               <p>X - Shoot Down</p>
@@ -765,7 +743,7 @@ export default function Crossfire() {
               style={{
                 left: player.x,
                 top: player.y,
-                transform: `translate(-50%, -50%) rotate(${playerRotation}deg)`
+                transform: 'translate(-50%, -50%)'
               }}
             >
               {hitEffect && (
@@ -806,33 +784,7 @@ export default function Crossfire() {
                   transition: 'none'
                 }}
               >
-                <div style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  backgroundColor: '#ff0066',
-                  borderRadius: '50% 50% 0 0',
-                  position: 'relative',
-                  border: '2px solid #ff66aa'
-                }}>
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    backgroundColor: '#ffff00',
-                    borderRadius: '50%',
-                    position: 'absolute',
-                    top: '6px',
-                    left: '3px'
-                  }} />
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    backgroundColor: '#ffff00',
-                    borderRadius: '50%',
-                    position: 'absolute',
-                    top: '6px',
-                    right: '3px'
-                  }} />
-                </div>
+                <div className="text-2xl">👾</div>
               </div>
             ))}
 
