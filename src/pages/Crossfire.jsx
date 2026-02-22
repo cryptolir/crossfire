@@ -294,26 +294,40 @@ export default function Crossfire() {
       }
 
       // Smooth continuous movement while arrow key is held
+      // On mobile, also track last pressed direction so ship always moves
+      const up = keysPressed.current['ArrowUp'];
+      const down = keysPressed.current['ArrowDown'];
+      const left = keysPressed.current['ArrowLeft'];
+      const right = keysPressed.current['ArrowRight'];
+      const anyDir = up || down || left || right;
+      if (anyDir) {
+        if (up) keysPressed.current._lastDir = 'ArrowUp';
+        else if (down) keysPressed.current._lastDir = 'ArrowDown';
+        else if (left) keysPressed.current._lastDir = 'ArrowLeft';
+        else if (right) keysPressed.current._lastDir = 'ArrowRight';
+      }
+      const activeDir = anyDir ? (up ? 'ArrowUp' : down ? 'ArrowDown' : left ? 'ArrowLeft' : 'ArrowRight') : (isMobileDevice() ? keysPressed.current._lastDir : null);
+
       setPlayer(prevPlayer => {
         const moveSpeed = 3;
         let newX = prevPlayer.x;
         let newY = prevPlayer.y;
         
-        if (keysPressed.current['ArrowUp']) {
+        if (activeDir === 'ArrowUp') {
           newY = prevPlayer.y - moveSpeed;
-        } else if (keysPressed.current['ArrowDown']) {
+        } else if (activeDir === 'ArrowDown') {
           newY = prevPlayer.y + moveSpeed;
-        } else if (keysPressed.current['ArrowLeft']) {
+        } else if (activeDir === 'ArrowLeft') {
           newX = prevPlayer.x - moveSpeed;
-        } else if (keysPressed.current['ArrowRight']) {
+        } else if (activeDir === 'ArrowRight') {
           newX = prevPlayer.x + moveSpeed;
         }
         
         // Snap to nearest street when moving perpendicular
-        if (keysPressed.current['ArrowUp'] || keysPressed.current['ArrowDown']) {
+        if (activeDir === 'ArrowUp' || activeDir === 'ArrowDown') {
           newX = snapToNearestStreet(newX);
         }
-        if (keysPressed.current['ArrowLeft'] || keysPressed.current['ArrowRight']) {
+        if (activeDir === 'ArrowLeft' || activeDir === 'ArrowRight') {
           newY = snapToNearestStreet(newY);
         }
         
