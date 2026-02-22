@@ -120,7 +120,8 @@ export default function Crossfire() {
   const [health, setHealth] = useState(INITIAL_HEALTH);
   const [hitEffect, setHitEffect] = useState(false);
   const [playerDirection, setPlayerDirection] = useState(null);
-  
+  const [isMobile] = useState(() => isMobileDevice());
+
   const keysPressed = useRef({});
   const gameLoopRef = useRef(null);
   const lastShotTime = useRef(0);
