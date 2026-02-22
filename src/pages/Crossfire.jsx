@@ -659,19 +659,18 @@ export default function Crossfire() {
   const scale = 1;
   const scaledSize = TOTAL_SIZE * scale;
 
-  // Mobile playing: fullscreen fixed layout with pads on sides
+  // Mobile playing: fullscreen fixed layout, game fills screen, pads overlaid
   if (isMobile && gameState === 'playing') {
-    const PAD_W = 164; // 3*48 + 2*4 (gaps) + 16 (padding)
     const HUD_H = 36;
-    const availW = window.innerWidth - PAD_W * 2 - 8;
-    const availH = window.innerHeight - HUD_H - 8;
+    const availW = window.innerWidth;
+    const availH = window.innerHeight - HUD_H;
     const mobileScale = Math.min(availW / TOTAL_SIZE, availH / TOTAL_SIZE, 1);
     const mobileScaledSize = TOTAL_SIZE * mobileScale;
 
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', flexDirection: 'column', touchAction: 'none', zIndex: 9999, overflow: 'hidden' }}>
         {/* HUD */}
-        <div style={{ height: HUD_H, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'white', fontSize: 13, flexShrink: 0 }}>
+        <div style={{ height: HUD_H, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'white', fontSize: 13, flexShrink: 0, zIndex: 10 }}>
           <span>Lvl: <b style={{ color: '#22d3ee' }}>{level}</b></span>
           <span>Score: <b style={{ color: '#facc15' }}>{score}</b></span>
           <span>{'❤️'.repeat(lives)}</span>
@@ -685,10 +684,8 @@ export default function Crossfire() {
           >⏸</button>
         </div>
 
-        {/* Main row: MovePad | Game | FirePad */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          <MovePad keysPressed={keysPressed} />
-
+        {/* Game area: fills remaining space, pads overlaid */}
+        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
           {/* Game canvas */}
           <div style={{ width: mobileScaledSize, height: mobileScaledSize, position: 'relative', flexShrink: 0 }}>
             <div
@@ -729,7 +726,13 @@ export default function Crossfire() {
             </div>
           </div>
 
-          <FirePad keysPressed={keysPressed} />
+          {/* Overlaid controls: MovePad bottom-left, FirePad bottom-right */}
+          <div style={{ position: 'absolute', bottom: 12, left: 8, zIndex: 20, opacity: 0.55, pointerEvents: 'auto' }}>
+            <MovePad keysPressed={keysPressed} />
+          </div>
+          <div style={{ position: 'absolute', bottom: 12, right: 8, zIndex: 20, opacity: 0.55, pointerEvents: 'auto' }}>
+            <FirePad keysPressed={keysPressed} />
+          </div>
         </div>
 
         {paused && (
