@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MobileControls from '../components/MobileControls';
+import { MovePad, FirePad } from '../components/MobileControls';
 
 const isMobileDevice = () => {
   return /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || window.innerWidth < 768;
