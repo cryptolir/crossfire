@@ -655,34 +655,46 @@ export default function Crossfire() {
     }
   }, [score, lastExtraLife]);
 
+  // Scale the grid for mobile
+  const scale = isMobile ? Math.min((window.innerWidth - 16) / TOTAL_SIZE, 1) : 1;
+  const scaledSize = TOTAL_SIZE * scale;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black p-4">
-      <div className="text-white mb-4 text-center">
-        <h1 className="text-4xl font-bold mb-2 text-cyan-400">CROSSFIRE</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black" style={{ touchAction: 'none' }}>
+      <div className="text-white text-center" style={{ padding: isMobile ? '8px 4px 0' : '16px' }}>
+        <h1 className={`font-bold text-cyan-400 ${isMobile ? 'text-2xl mb-1' : 'text-4xl mb-2'}`}>CROSSFIRE</h1>
+
         {gameState === 'menu' && (
-          <div className="text-center space-y-4">
-            <p className="text-xl">Defend your city from alien invaders!</p>
-            <div className="text-left inline-block space-y-2 bg-gray-900 p-4 rounded-lg border border-cyan-500">
-              <p className="text-cyan-300 font-bold mb-2">🎮 CONTROLS:</p>
-              <p>⬆️⬇️⬅️➡️ Arrow Keys - Move continuously (Pac-Man style)</p>
-              <p className="text-yellow-300 font-bold mt-3 mb-2">🔫 SHOOTING:</p>
-              <p>W - Shoot Up</p>
-              <p>X - Shoot Down</p>
-              <p>A - Shoot Left</p>
-              <p>D - Shoot Right</p>
-              <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
-              <p>💎 Collect crystals for bonus points (100-800)</p>
-              <p>📦 Grab ammo packs when running low</p>
-              <p>⭐ Extra life every 25,000 points</p>
-              <p>❤️ Each life has 3 health points (♥♥♥)</p>
-              <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
-              <p>👾 Aliens start shooting from Level 3!</p>
-              <p>💥 Enemy bullets take 1 health point</p>
-              <p>☠️ Direct alien contact = instant life loss</p>
+          <div className="text-center space-y-3">
+            <p className={isMobile ? 'text-base' : 'text-xl'}>Defend your city from alien invaders!</p>
+            <div className={`text-left inline-block space-y-1 bg-gray-900 rounded-lg border border-cyan-500 ${isMobile ? 'p-3 text-sm' : 'p-4'}`}>
+              {isMobile ? (
+                <>
+                  <p className="text-cyan-300 font-bold">🎮 Left D-pad: Move &nbsp; Right D-pad: Fire</p>
+                  <p className="text-green-300 font-bold mt-2">📋 TIPS:</p>
+                  <p>💎 Crystals: bonus points &nbsp; 📦 Grab ammo packs</p>
+                  <p>⭐ Extra life every 25,000 pts &nbsp; ❤️ 3 health per life</p>
+                  <p className="text-red-400 font-bold mt-2">⚠️ Aliens shoot from Level 3!</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-cyan-300 font-bold mb-2">🎮 CONTROLS:</p>
+                  <p>⬆️⬇️⬅️➡️ Arrow Keys - Move continuously (Pac-Man style)</p>
+                  <p className="text-yellow-300 font-bold mt-3 mb-2">🔫 SHOOTING:</p>
+                  <p>W - Shoot Up &nbsp; X - Shoot Down &nbsp; A - Shoot Left &nbsp; D - Shoot Right</p>
+                  <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
+                  <p>💎 Collect crystals for bonus points (100-800)</p>
+                  <p>📦 Grab ammo packs when running low</p>
+                  <p>⭐ Extra life every 25,000 points &nbsp; ❤️ Each life has 3 health points</p>
+                  <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
+                  <p>👾 Aliens start shooting from Level 3!</p>
+                  <p>💥 Enemy bullets take 1 health point &nbsp; ☠️ Direct alien contact = instant life loss</p>
+                </>
+              )}
             </div>
             <button
               onClick={startGame}
-              className="mt-6 px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xl rounded"
+              className={`bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded ${isMobile ? 'px-6 py-2 text-lg' : 'mt-6 px-8 py-3 text-xl'}`}
             >
               START GAME
             </button>
@@ -691,18 +703,16 @@ export default function Crossfire() {
       </div>
 
       {gameState === 'playing' && (
-        <>
-          <div className="flex gap-8 mb-4 text-white text-xl">
-            <div>Level: <span className="text-cyan-400 font-bold">{level}</span></div>
+        <div className="flex flex-col items-center w-full">
+          {/* HUD */}
+          <div className={`flex gap-4 text-white ${isMobile ? 'text-sm mb-1' : 'text-xl mb-4'}`}>
+            <div>Lvl: <span className="text-cyan-400 font-bold">{level}</span></div>
             <div>Score: <span className="text-yellow-400 font-bold">{score}</span></div>
-            <div className="flex flex-col items-center gap-1">
-              <div>Lives: <span className="text-red-400 font-bold">{'❤️'.repeat(lives)}</span></div>
-              <div className="flex gap-0.5">
+            <div className="flex items-center gap-1">
+              <span>{'❤️'.repeat(lives)}</span>
+              <div className="flex gap-0.5 ml-1">
                 {[0, 1, 2].map(i => (
-                  <div 
-                    key={i}
-                    className={`w-5 h-2 border border-pink-400 ${i < health ? 'bg-pink-500' : 'bg-gray-700'}`}
-                  />
+                  <div key={i} className={`border border-pink-400 ${isMobile ? 'w-3 h-1.5' : 'w-5 h-2'} ${i < health ? 'bg-pink-500' : 'bg-gray-700'}`} />
                 ))}
               </div>
             </div>
@@ -713,146 +723,102 @@ export default function Crossfire() {
             <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-50">
               <div className="text-center text-white">
                 <h2 className="text-4xl font-bold text-cyan-400 mb-4">PAUSED</h2>
-                <p className="text-xl">Press SPACE to continue</p>
+                <p className="text-xl">{isMobile ? 'Tap ⏸ to continue' : 'Press SPACE to continue'}</p>
               </div>
             </div>
           )}
 
-          <div 
-            className="relative border-4 border-blue-600"
-            style={{ 
-              width: TOTAL_SIZE, 
-              height: TOTAL_SIZE,
-              background: '#000'
-            }}
-          >
-            {/* Grid blocks */}
-            {Array.from({ length: GRID_BLOCKS }).map((_, row) => 
-              Array.from({ length: GRID_BLOCKS }).map((_, col) => (
-                <div
-                  key={`block-${row}-${col}`}
-                  className="absolute border-2 border-blue-500"
-                  style={{
-                    left: STREET_WIDTH + col * (BLOCK_SIZE + STREET_WIDTH),
-                    top: STREET_WIDTH + row * (BLOCK_SIZE + STREET_WIDTH),
-                    width: BLOCK_SIZE,
-                    height: BLOCK_SIZE,
-                    background: '#000'
-                  }}
-                />
-              ))
-            )}
-
-            {/* Player */}
+          {/* Game canvas */}
+          <div style={{ width: scaledSize, height: scaledSize, position: 'relative' }}>
             <div
-              className={`absolute ${invulnerable ? 'animate-pulse' : ''}`}
+              className="relative border-4 border-blue-600"
               style={{
-                left: player.x,
-                top: player.y,
-                transform: 'translate(-50%, -50%)'
+                width: TOTAL_SIZE,
+                height: TOTAL_SIZE,
+                background: '#000',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left'
               }}
             >
-              {hitEffect && (
-                <div 
-                  className="absolute animate-ping"
+              {Array.from({ length: GRID_BLOCKS }).map((_, row) =>
+                Array.from({ length: GRID_BLOCKS }).map((_, col) => (
+                  <div
+                    key={`block-${row}-${col}`}
+                    className="absolute border-2 border-blue-500"
+                    style={{
+                      left: STREET_WIDTH + col * (BLOCK_SIZE + STREET_WIDTH),
+                      top: STREET_WIDTH + row * (BLOCK_SIZE + STREET_WIDTH),
+                      width: BLOCK_SIZE,
+                      height: BLOCK_SIZE,
+                      background: '#000'
+                    }}
+                  />
+                ))
+              )}
+
+              {/* Player */}
+              <div
+                className={`absolute ${invulnerable ? 'animate-pulse' : ''}`}
+                style={{ left: player.x, top: player.y, transform: 'translate(-50%, -50%)' }}
+              >
+                {hitEffect && (
+                  <div
+                    className="absolute animate-ping"
+                    style={{
+                      width: '50px', height: '50px', borderRadius: '50%',
+                      background: 'radial-gradient(circle, rgba(255,100,0,0.8) 0%, rgba(255,50,0,0.4) 50%, transparent 70%)',
+                      transform: 'translate(-25%, -25%)', zIndex: 10
+                    }}
+                  />
+                )}
+                <img
+                  src={SHIP_IMAGE}
+                  alt="ship"
                   style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(255,100,0,0.8) 0%, rgba(255,50,0,0.4) 50%, transparent 70%)',
-                    transform: 'translate(-25%, -25%)',
-                    zIndex: 10
+                    width: '32px', height: '32px', imageRendering: 'pixelated', objectFit: 'contain',
+                    filter: hitEffect ? 'brightness(2) sepia(1) saturate(5) hue-rotate(-20deg)' : 'none'
                   }}
                 />
-              )}
-              <img 
-                src={SHIP_IMAGE} 
-                alt="ship" 
-                style={{ 
-                  width: '32px', 
-                  height: '32px',
-                  imageRendering: 'pixelated',
-                  objectFit: 'contain',
-                  filter: hitEffect ? 'brightness(2) sepia(1) saturate(5) hue-rotate(-20deg)' : 'none'
-                }} 
-              />
+              </div>
+
+              {/* Aliens */}
+              {aliens.map(alien => (
+                <div key={alien.id} className="absolute" style={{ left: alien.x, top: alien.y, transform: 'translate(-50%, -50%)', transition: 'none' }}>
+                  <div className="text-2xl">👾</div>
+                </div>
+              ))}
+
+              {/* Player bullets */}
+              {bullets.map(bullet => (
+                <div key={bullet.id} className="absolute bg-yellow-400 rounded-full" style={{ left: bullet.x - 3, top: bullet.y - 3, width: 6, height: 6 }} />
+              ))}
+
+              {/* Alien bullets */}
+              {alienBullets.map(bullet => (
+                <div key={bullet.id} className="absolute bg-red-500 rounded-full" style={{ left: bullet.x - 3, top: bullet.y - 3, width: 6, height: 6 }} />
+              ))}
+
+              {/* Crystals */}
+              {crystals.map((crystal, idx) => (
+                <div key={`crystal-${idx}`} className="absolute animate-pulse" style={{ left: crystal.x, top: crystal.y, transform: 'translate(-50%, -50%)' }}>
+                  <div className="text-xl">💎</div>
+                </div>
+              ))}
+
+              {/* Ammo packs */}
+              {ammoPacks.map((pack, idx) => (
+                <div key={`ammo-${idx}`} className="absolute" style={{ left: pack.x, top: pack.y, transform: 'translate(-50%, -50%)' }}>
+                  <div className="text-xl">📦</div>
+                </div>
+              ))}
             </div>
-
-            {/* Aliens */}
-            {aliens.map(alien => (
-              <div
-                key={alien.id}
-                className="absolute"
-                style={{
-                  left: alien.x,
-                  top: alien.y,
-                  transform: 'translate(-50%, -50%)',
-                  transition: 'none'
-                }}
-              >
-                <div className="text-2xl">👾</div>
-              </div>
-            ))}
-
-            {/* Player bullets */}
-            {bullets.map(bullet => (
-              <div
-                key={bullet.id}
-                className="absolute bg-yellow-400 rounded-full"
-                style={{
-                  left: bullet.x - 3,
-                  top: bullet.y - 3,
-                  width: 6,
-                  height: 6
-                }}
-              />
-            ))}
-
-            {/* Alien bullets */}
-            {alienBullets.map(bullet => (
-              <div
-                key={bullet.id}
-                className="absolute bg-red-500 rounded-full"
-                style={{
-                  left: bullet.x - 3,
-                  top: bullet.y - 3,
-                  width: 6,
-                  height: 6
-                }}
-              />
-            ))}
-
-            {/* Crystals */}
-            {crystals.map((crystal, idx) => (
-              <div
-                key={`crystal-${idx}`}
-                className="absolute animate-pulse"
-                style={{
-                  left: crystal.x,
-                  top: crystal.y,
-                  transform: 'translate(-50%, -50%)'
-                }}
-              >
-                <div className="text-xl">💎</div>
-              </div>
-            ))}
-
-            {/* Ammo packs */}
-            {ammoPacks.map((pack, idx) => (
-              <div
-                key={`ammo-${idx}`}
-                className="absolute"
-                style={{
-                  left: pack.x,
-                  top: pack.y,
-                  transform: 'translate(-50%, -50%)'
-                }}
-              >
-                <div className="text-xl">📦</div>
-              </div>
-            ))}
           </div>
-        </>
+
+          {/* Mobile controls */}
+          {isMobile && (
+            <MobileControls keysPressed={keysPressed} onPause={() => setPaused(p => !p)} />
+          )}
+        </div>
       )}
 
       {gameState === 'gameOver' && (
