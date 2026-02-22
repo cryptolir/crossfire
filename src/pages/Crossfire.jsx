@@ -907,24 +907,6 @@ export default function Crossfire() {
             </div>
           </div>
 
-          {/* Mobile controls */}
-          {isMobile && (
-            <MobileControls keysPressed={keysPressed} onPause={() => setPaused(p => !p)} />
-          )}
-        </div>
-      )}
-
-      {gameState === 'gameOver' && (
-        <div className="text-center text-white">
-          <h2 className="text-3xl font-bold mb-4 text-red-500">GAME OVER</h2>
-          <p className="text-2xl mb-2">Final Score: <span className="text-yellow-400">{score}</span></p>
-          <p className="text-xl mb-4">Level Reached: <span className="text-cyan-400">{level}</span></p>
-          <button
-            onClick={startGame}
-            className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xl rounded"
-          >
-            PLAY AGAIN
-          </button>
         </div>
       )}
     </div>
