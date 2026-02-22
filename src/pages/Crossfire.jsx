@@ -664,46 +664,54 @@ export default function Crossfire() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', display: 'flex', flexDirection: 'column', touchAction: 'none' }}>
-      <div className="text-white text-center" style={{ padding: isMobile ? '8px 4px 0' : '16px' }}>
-        <h1 className={`font-bold text-cyan-400 ${isMobile ? 'text-2xl mb-1' : 'text-4xl mb-2'}`}>CROSSFIRE</h1>
+      {/* Menu / non-playing overlay */}
+      {gameState !== 'playing' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', padding: 16 }}>
+          <h1 style={{ fontSize: isMobile ? 28 : 40, fontWeight: 'bold', color: '#22d3ee', marginBottom: 8 }}>CROSSFIRE</h1>
 
-        {gameState === 'menu' && (
-          <div className="text-center space-y-3">
-            <p className={isMobile ? 'text-base' : 'text-xl'}>Defend your city from alien invaders!</p>
-            <div className={`text-left inline-block space-y-1 bg-gray-900 rounded-lg border border-cyan-500 ${isMobile ? 'p-3 text-sm' : 'p-4'}`}>
-              {isMobile ? (
-                <>
-                  <p className="text-cyan-300 font-bold">🎮 Left D-pad: Move &nbsp; Right D-pad: Fire</p>
-                  <p className="text-green-300 font-bold mt-2">📋 TIPS:</p>
-                  <p>💎 Crystals: bonus points &nbsp; 📦 Grab ammo packs</p>
-                  <p>⭐ Extra life every 25,000 pts &nbsp; ❤️ 3 health per life</p>
-                  <p className="text-red-400 font-bold mt-2">⚠️ Aliens shoot from Level 3!</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-cyan-300 font-bold mb-2">🎮 CONTROLS:</p>
-                  <p>⬆️⬇️⬅️➡️ Arrow Keys - Move continuously (Pac-Man style)</p>
-                  <p className="text-yellow-300 font-bold mt-3 mb-2">🔫 SHOOTING:</p>
-                  <p>W - Shoot Up &nbsp; X - Shoot Down &nbsp; A - Shoot Left &nbsp; D - Shoot Right</p>
-                  <p className="text-green-300 font-bold mt-3 mb-2">📋 TIPS:</p>
-                  <p>💎 Collect crystals for bonus points (100-800)</p>
-                  <p>📦 Grab ammo packs when running low</p>
-                  <p>⭐ Extra life every 25,000 points &nbsp; ❤️ Each life has 3 health points</p>
-                  <p className="text-red-400 font-bold mt-3 mb-2">⚠️ WARNING:</p>
-                  <p>👾 Aliens start shooting from Level 3!</p>
-                  <p>💥 Enemy bullets take 1 health point &nbsp; ☠️ Direct alien contact = instant life loss</p>
-                </>
-              )}
+          {gameState === 'menu' && (
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: isMobile ? 16 : 20, marginBottom: 12 }}>Defend your city from alien invaders!</p>
+              <div style={{ textAlign: 'left', display: 'inline-block', background: '#111827', border: '1px solid #22d3ee', borderRadius: 10, padding: isMobile ? 12 : 16, fontSize: isMobile ? 13 : 15, lineHeight: 1.7 }}>
+                {isMobile ? (
+                  <>
+                    <p style={{ color: '#67e8f9', fontWeight: 'bold' }}>🎮 Left D-pad: Move &nbsp; Right D-pad: Fire</p>
+                    <p style={{ color: '#86efac', fontWeight: 'bold', marginTop: 8 }}>📋 TIPS:</p>
+                    <p>💎 Crystals: bonus points &nbsp; 📦 Grab ammo packs</p>
+                    <p>⭐ Extra life every 25,000 pts &nbsp; ❤️ 3 health per life</p>
+                    <p style={{ color: '#f87171', fontWeight: 'bold', marginTop: 8 }}>⚠️ Aliens shoot from Level 3!</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ color: '#67e8f9', fontWeight: 'bold' }}>🎮 CONTROLS:</p>
+                    <p>⬆️⬇️⬅️➡️ Arrow Keys - Move &nbsp; SPACE - Pause</p>
+                    <p style={{ color: '#fde047', fontWeight: 'bold', marginTop: 8 }}>🔫 SHOOTING:</p>
+                    <p>W - Up &nbsp; X - Down &nbsp; A - Left &nbsp; D - Right</p>
+                    <p style={{ color: '#86efac', fontWeight: 'bold', marginTop: 8 }}>📋 TIPS:</p>
+                    <p>💎 Crystals: 100–800pts &nbsp; 📦 Ammo packs &nbsp; ⭐ +life/25k pts</p>
+                    <p style={{ color: '#f87171', fontWeight: 'bold', marginTop: 8 }}>⚠️ Aliens shoot from Level 3!</p>
+                  </>
+                )}
+              </div>
+              <br />
+              <button onClick={startGame} style={{ marginTop: 16, padding: '10px 32px', background: '#0891b2', color: 'white', fontWeight: 'bold', fontSize: isMobile ? 16 : 20, border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                START GAME
+              </button>
             </div>
-            <button
-              onClick={startGame}
-              className={`bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded ${isMobile ? 'px-6 py-2 text-lg' : 'mt-6 px-8 py-3 text-xl'}`}
-            >
-              START GAME
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+
+          {gameState === 'gameOver' && (
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontSize: 32, fontWeight: 'bold', color: '#ef4444', marginBottom: 12 }}>GAME OVER</h2>
+              <p style={{ fontSize: 22, marginBottom: 6 }}>Final Score: <span style={{ color: '#facc15', fontWeight: 'bold' }}>{score}</span></p>
+              <p style={{ fontSize: 18, marginBottom: 16 }}>Level Reached: <span style={{ color: '#22d3ee', fontWeight: 'bold' }}>{level}</span></p>
+              <button onClick={startGame} style={{ padding: '10px 32px', background: '#0891b2', color: 'white', fontWeight: 'bold', fontSize: 20, border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+                PLAY AGAIN
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {gameState === 'playing' && (
         <div className="flex flex-col items-center w-full">
