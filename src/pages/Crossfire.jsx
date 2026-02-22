@@ -1,4 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import MobileControls from '../components/MobileControls';
+
+const isMobileDevice = () => {
+  return /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || window.innerWidth < 768;
+};
 
 // Grid is 7x7 blocks with streets in between
 const GRID_BLOCKS = 7;
