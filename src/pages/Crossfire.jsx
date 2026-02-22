@@ -655,12 +655,94 @@ export default function Crossfire() {
     }
   }, [score, lastExtraLife]);
 
-  // For mobile: scale grid to fit the vertical height minus HUD, within available width between pads
-  const padWidth = 168; // 3 * 48px buttons + gaps + padding ≈ 168px
-  const availableW = isMobile ? Math.max(window.innerWidth - padWidth * 2 - 8, 100) : TOTAL_SIZE;
-  const availableH = isMobile ? Math.max(window.innerHeight - 80, 200) : TOTAL_SIZE;
-  const scale = isMobile ? Math.min(availableW / TOTAL_SIZE, availableH / TOTAL_SIZE, 1) : 1;
+  // Desktop scale
+  const scale = 1;
   const scaledSize = TOTAL_SIZE * scale;
+
+  // Mobile playing: fullscreen fixed layout with pads on sides
+  if (isMobile && gameState === 'playing') {
+    const PAD_W = 164; // 3*48 + 2*4 (gaps) + 16 (padding)
+    const HUD_H = 36;
+    const availW = window.innerWidth - PAD_W * 2 - 8;
+    const availH = window.innerHeight - HUD_H - 8;
+    const mobileScale = Math.min(availW / TOTAL_SIZE, availH / TOTAL_SIZE, 1);
+    const mobileScaledSize = TOTAL_SIZE * mobileScale;
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', flexDirection: 'column', touchAction: 'none', zIndex: 9999, overflow: 'hidden' }}>
+        {/* HUD */}
+        <div style={{ height: HUD_H, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'white', fontSize: 13, flexShrink: 0 }}>
+          <span>Lvl: <b style={{ color: '#22d3ee' }}>{level}</b></span>
+          <span>Score: <b style={{ color: '#facc15' }}>{score}</b></span>
+          <span>{'❤️'.repeat(lives)}</span>
+          <span style={{ display: 'flex', gap: 2 }}>
+            {[0,1,2].map(i => <span key={i} style={{ width: 10, height: 6, border: '1px solid #f472b6', background: i < health ? '#ec4899' : '#374151', display: 'inline-block' }} />)}
+          </span>
+          <span>Ammo: <b style={{ color: ammo < 10 ? '#ef4444' : '#4ade80' }}>{ammo}</b></span>
+          <button
+            style={{ padding: '2px 10px', background: 'rgba(8,145,178,0.6)', color: 'white', border: '1px solid #22d3ee', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
+            onPointerDown={(e) => { e.preventDefault(); setPaused(p => !p); }}
+          >⏸</button>
+        </div>
+
+        {/* Main row: MovePad | Game | FirePad */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <MovePad keysPressed={keysPressed} />
+
+          {/* Game canvas */}
+          <div style={{ width: mobileScaledSize, height: mobileScaledSize, position: 'relative', flexShrink: 0 }}>
+            <div
+              style={{
+                width: TOTAL_SIZE,
+                height: TOTAL_SIZE,
+                position: 'relative',
+                border: '4px solid #2563eb',
+                background: '#030712',
+                transform: `scale(${mobileScale})`,
+                transformOrigin: 'top left'
+              }}
+            >
+              {Array.from({ length: GRID_BLOCKS }).map((_, row) =>
+                Array.from({ length: GRID_BLOCKS }).map((_, col) => (
+                  <div key={`block-${row}-${col}`} style={{ position: 'absolute', left: STREET_WIDTH + col * (BLOCK_SIZE + STREET_WIDTH), top: STREET_WIDTH + row * (BLOCK_SIZE + STREET_WIDTH), width: BLOCK_SIZE, height: BLOCK_SIZE, background: '#000', border: '2px solid #3b82f6' }} />
+                ))
+              )}
+              <div className={`absolute ${invulnerable ? 'animate-pulse' : ''}`} style={{ left: player.x, top: player.y, transform: 'translate(-50%, -50%)' }}>
+                {hitEffect && <div className="absolute animate-ping" style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,100,0,0.8) 0%, rgba(255,50,0,0.4) 50%, transparent 70%)', transform: 'translate(-25%, -25%)', zIndex: 10 }} />}
+                <img src={SHIP_IMAGE} alt="ship" style={{ width: '32px', height: '32px', imageRendering: 'pixelated', objectFit: 'contain', filter: hitEffect ? 'brightness(2) sepia(1) saturate(5) hue-rotate(-20deg)' : 'none' }} />
+              </div>
+              {aliens.map(alien => (
+                <div key={alien.id} style={{ position: 'absolute', left: alien.x, top: alien.y, transform: 'translate(-50%, -50%)' }}><div className="text-2xl">👾</div></div>
+              ))}
+              {bullets.map(bullet => (
+                <div key={bullet.id} style={{ position: 'absolute', left: bullet.x - 3, top: bullet.y - 3, width: 6, height: 6, background: '#facc15', borderRadius: '50%' }} />
+              ))}
+              {alienBullets.map(bullet => (
+                <div key={bullet.id} style={{ position: 'absolute', left: bullet.x - 3, top: bullet.y - 3, width: 6, height: 6, background: '#ef4444', borderRadius: '50%' }} />
+              ))}
+              {crystals.map((crystal, idx) => (
+                <div key={`crystal-${idx}`} className="absolute animate-pulse" style={{ left: crystal.x, top: crystal.y, transform: 'translate(-50%, -50%)' }}><div className="text-xl">💎</div></div>
+              ))}
+              {ammoPacks.map((pack, idx) => (
+                <div key={`ammo-${idx}`} style={{ position: 'absolute', left: pack.x, top: pack.y, transform: 'translate(-50%, -50%)' }}><div className="text-xl">📦</div></div>
+              ))}
+            </div>
+          </div>
+
+          <FirePad keysPressed={keysPressed} />
+        </div>
+
+        {paused && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', zIndex: 100 }}>
+            <div style={{ textAlign: 'center', color: 'white' }}>
+              <h2 style={{ fontSize: 32, fontWeight: 'bold', color: '#22d3ee', marginBottom: 8 }}>PAUSED</h2>
+              <p>Tap ⏸ to continue</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', display: 'flex', flexDirection: 'column', touchAction: 'none' }}>
