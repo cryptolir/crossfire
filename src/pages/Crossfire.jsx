@@ -663,7 +663,7 @@ export default function Crossfire() {
   const scaledSize = TOTAL_SIZE * scale;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black" style={{ touchAction: 'none' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', display: 'flex', flexDirection: 'column', touchAction: 'none' }}>
       <div className="text-white text-center" style={{ padding: isMobile ? '8px 4px 0' : '16px' }}>
         <h1 className={`font-bold text-cyan-400 ${isMobile ? 'text-2xl mb-1' : 'text-4xl mb-2'}`}>CROSSFIRE</h1>
 
