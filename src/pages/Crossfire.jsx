@@ -655,8 +655,11 @@ export default function Crossfire() {
     }
   }, [score, lastExtraLife]);
 
-  // Scale the grid for mobile
-  const scale = isMobile ? Math.min((window.innerWidth - 16) / TOTAL_SIZE, 1) : 1;
+  // For mobile: scale grid to fit the vertical height minus HUD, within available width between pads
+  const padWidth = 168; // 3 * 48px buttons + gaps + padding ≈ 168px
+  const availableW = isMobile ? Math.max(window.innerWidth - padWidth * 2 - 8, 100) : TOTAL_SIZE;
+  const availableH = isMobile ? Math.max(window.innerHeight - 80, 200) : TOTAL_SIZE;
+  const scale = isMobile ? Math.min(availableW / TOTAL_SIZE, availableH / TOTAL_SIZE, 1) : 1;
   const scaledSize = TOTAL_SIZE * scale;
 
   return (
